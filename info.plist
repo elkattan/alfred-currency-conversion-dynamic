@@ -107,7 +107,7 @@
 				<key>escaping</key>
 				<integer>102</integer>
 				<key>keyword</key>
-				<string>curcon</string>
+				<string>cur</string>
 				<key>queuedelaycustom</key>
 				<integer>3</integer>
 				<key>queuedelayimmediatelyinitially</key>
@@ -148,7 +148,7 @@
 				<key>escaping</key>
 				<integer>0</integer>
 				<key>script</key>
-				<string>tell application "Alfred 4" to search "curcon {query}"</string>
+				<string>tell application "Alfred 4" to search "cur {query}"</string>
 				<key>scriptargtype</key>
 				<integer>0</integer>
 				<key>scriptfile</key>
@@ -262,7 +262,7 @@
 &gt; Alfred 4 Workflow - See foreign exchange rates and currency conversion
 
 ## Usage
-In Alfred, type `curcon`, ⏎, and your amount.
+In Alfred, type `cur`, ⏎, and your amount.
 
 ## Highlights
 - Set your own base currency (default `EUR`)
@@ -334,7 +334,7 @@ MIT © [Jeppe Stærk](https://staerk.io)</string>
 	<key>variablesdontexport</key>
 	<array/>
 	<key>version</key>
-	<string>v1.6.1</string>
+	<string>v1.6.2</string>
 	<key>webaddress</key>
 	<string>https://github.com/jeppestaerk/alfred-currency-conversion#readme</string>
 </dict>
