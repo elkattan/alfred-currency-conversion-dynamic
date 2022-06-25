@@ -1,5 +1,5 @@
-'use strict';
-const alfy = require('alfy');
+(async function() {
+const alfy = await (await import('alfy')).default;
 const osLocale = require('os-locale');
 
 const newList = []; // used in updateList()
@@ -7,14 +7,19 @@ const query = [];
 const output = [];
 const promises = [];
 const api = 'https://open.er-api.com/v6';
-const currencies = ["AED", "AUD", "BGN", "BRL", "CAD", "CHF", "CNY", "COP", "CZK", "DKK", "EUR", "GBP", "HKD", "HRK", "HUF", "IDR", "ILS", "INR", "ISK", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PLN", "RON", "RSD", "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "UAH", "USD", "VND", "ZAR"];
-const favoriteCurrency = alfy.cache.get('favoriteCurrency'); // this is where custom list is stored
+const currencies = ["IRR", "KGS", "PGK", "JOD", "NOK", "MUR", "UAH", "DKK", "KHR", "XPF", "TZS", "PYG", "SAR", "PHP", "RUB", "EGP", "LRD", "MOP", "LYD", "AFN", "RSD", "none", "TMT", "HNL", "SHP", "MGA", "UZS", "MDL", "AWG", "KWD", "UYU", "MWK", "GMD", "ZMW", "RWF", "ISK", "GNF", "KRW", "HKD", "NPR", "XCD", "BZD", "GTQ", "MZN", "BHD", "MRU", "AMD", "ILS", "PLN", "SCR", "GIP", "CRC", "GHS", "TJS", "IQD", "CZK", "HUF", "KZT", "SYP", "BTN", "GBP", "SRD", "AED", "XOF", "MXN", "CDF", "MKD", "SOS", "BDT", "CVE", "ALL", "BAM", "WST", "RON", "VUV", "AZN", "HTG", "CHF", "GYD", "FJD", "BWP", "TWD", "ETB", "BND", "CLP", "BYN", "MMK", "XDR", "ARS", "COP", "DJF", "AOA", "LKR", "TTD", "NAD", "KPW", "SEK", "KYD", "IMP", "MYR", "PKR", "QAR", "THB", "KMF", "BGN", "NGN", "INR", "TOP", "MVR", "YER", "ZAR", "JPY", "MAD", "MNT", "CUP", "DOP", "PEN", "BBD", "CAD", "ERN", "JEP", "ANG", "NIO", "OMR", "JMD", "HRK", "SDG", "SZL", "FKP", "BOB", "GEL", "GGP", "EUR", "BIF", "LAK", "SBD", "TRY", "SSP", "NZD", "CNY", "KES", "BRL", "IDR", "BSD", "AUD", "SLL", "VND", "BMD", "TND", "LBP", "UGX", "LSL", "USD", "STN", "DZD", "SGD", "VES", "XAF"] // 158 currency
+const favoriteCurrency = (alfy.cache.get('favoriteCurrency') || []).filter(favCur => currencies.includes(favCur)); // this is where custom list is stored
 const lastUpdate = new Date(alfy.cache.get('updateDate'));
 const nextUpdate = new Date(alfy.cache.get('nextUpdate'));
 const l = alfy.cache.get('locale') || 'en-GB';
 const locale = l.replace('_', '-');
 const baseCurrency = alfy.cache.get('baseCurrency');
 const q = alfy.input.toUpperCase().replace('$', 'USD').replace('€', 'EUR').replace('£', 'GBP').replace('¥', 'JPY').replace('₩', 'KRW').replace('₽', 'RUB').replace('₹', 'INR').split(/(\d*[.,]?\d+)([A-z]{1,3})/);
+
+const REMOVE_FAV_ARG = 'RM-FAV';
+const RESET_FAV_ARG = 'RESET-FAV';
+const LIST_FAV_ARG = 'LIST-FAV';
+const BASE_CURRENCY_ARG = 'BASE';
 
 q.forEach(item => item.split(" ").filter(item => item.length > 0).forEach(item => query.push(item)));
 
@@ -42,34 +47,34 @@ function addBaseOutput() {
     Which lead users to customize their favorite currency list
     */
 
-    // 'curcon LIST' to add favorite currency list
+    // 'curcon LIST_FAV_ARG' to add favorite currency list
     output.push({
         title: 'Add a currency to favorite list',
         subtitle: `You can customize your favorite currency list`,
-        arg: 'LIST ',
-        autocomplete: 'LIST ',
+        arg: LIST_FAV_ARG + ' ',
+        autocomplete: LIST_FAV_ARG + ' ',
         icon: {
             path: 'settings.png'
         }
     });
 
-    // 'curcon RMVE' to remove specific currency from the list
+    // 'curcon REMOVE_FAV_ARG' to remove specific currency from the list
     output.push({
         title: 'Remove a currency from favorite list',
         subtitle: `Remove a currency from your favorite currency list`,
-        arg: 'RMVE ',
-        autocomplete: 'RMVE ',
+        arg: REMOVE_FAV_ARG + ' ',
+        autocomplete: REMOVE_FAV_ARG + ' ',
         icon: {
             path: 'settings.png'
         }
     });
 
-    // 'curcon REST' to reset favorite currency list
+    // 'curcon RESET_FAV_ARG' to reset favorite currency list
     output.push({
         title: 'Reset custom favorite currency list',
         subtitle: `Reset your favorite currency list`,
-        arg: 'REST ',
-        autocomplete: 'REST ',
+        arg: RESET_FAV_ARG + ' ',
+        autocomplete: RESET_FAV_ARG + ' ',
         icon: {
             path: 'settings.png'
         }
@@ -78,8 +83,8 @@ function addBaseOutput() {
     output.push({
         title: 'Set/Update base currency',
         subtitle: `current base currency is: ${baseCurrency}`,
-        arg: 'BASE ',
-        autocomplete: 'BASE ',
+        arg: BASE_CURRENCY_ARG + ' ',
+        autocomplete: BASE_CURRENCY_ARG + ' ',
         icon: {
             path: 'settings.png'
         }
@@ -102,7 +107,7 @@ function addSetBaseCurrencyListOutput(currency) {
         icon: {
             path: `flags/${currency}.png`
         },
-        arg: `BASE ${currency}`
+        arg: `${BASE_CURRENCY_ARG} ${currency}`
     })
 }
 
@@ -212,10 +217,10 @@ function updateList(list) {
         newList.push(list);
         alfy.cache.set('favoriteCurrency', newList);
     }
-    else {
+    else if (!favoriteCurrency.includes(list)) { // if it's not in the list
         favoriteCurrency.push(list);
         alfy.cache.set('favoriteCurrency', favoriteCurrency);
-    }   
+    }
 }
 
 function reomoveList(list) {
@@ -226,7 +231,7 @@ function reomoveList(list) {
             break;
         }
     }
-    alfy.cache.set('favoriteCurrency', favoriteCurrency);   
+    alfy.cache.set('favoriteCurrency', favoriteCurrency);
 }
 
 function addUpdateListOutput(currency) {
@@ -249,13 +254,13 @@ function addRemoveListOutput(currency) {
     });
 }
 
-function addfavoriteCurrencyListOutput(currency) {
+function addFavoriteCurrencyListOutput(currency) {
     output.push({
         title: `Add ${currency} to favorite currency list`,
         icon: {
             path: `flags/${currency}.png`
         },
-        arg: `LIST ${currency}`
+        arg: `${LIST_FAV_ARG} ${currency}`
     });
 }
 
@@ -266,7 +271,7 @@ function removeFavoriteCurrencyListOutput(currency) {
         icon: {
             path: `flags/${currency}.png`
         },
-        arg: `RMVE ${currency}`
+        arg: `${REMOVE_FAV_ARG} ${currency}`
     });
 }
 
@@ -277,7 +282,7 @@ function resetfavoriteCurrency() {
         icon: {
             path: 'settings.png'
         },
-        arg: `REST GO` // double check the reset
+        arg: `${RESET_FAV_ARG} GO` // double check the reset
     });
 }
 
@@ -291,7 +296,7 @@ function addResetOutput() {
         icon: {
             path: `settings.png`
         },
-        arg: 'LIST ' // There must be at least one currency in favoriteCurrency
+        arg: LIST_FAV_ARG + ' ' // There must be at least one currency in favoriteCurrency
     });
 }
 
@@ -308,7 +313,7 @@ if (nextUpdate < new Date()){
     });
 }
 
-if (query[0] !== 'BASE' && (!baseCurrency || !lastUpdate)) {
+if (query[0] !== BASE_CURRENCY_ARG && (!baseCurrency || !lastUpdate)) {
     promises.push(getOSLocale());
     if (!query[0]) {
         currencies.forEach(currency => addSetBaseCurrencyListOutput(currency));
@@ -324,14 +329,14 @@ if (query[0] !== 'BASE' && (!baseCurrency || !lastUpdate)) {
     before all
 */
 
-else if ((favoriteCurrency == "" || typeof favoriteCurrency == "undefined") && query[0] !== 'LIST' && query[0] !== 'BASE') {
+else if ((favoriteCurrency == "" || typeof favoriteCurrency == "undefined") && query[0] !== LIST_FAV_ARG && query[0] !== BASE_CURRENCY_ARG) {
     promises.push(getOSLocale());
     if (!query[0]) {
-        currencies.forEach(currency => addfavoriteCurrencyListOutput(currency));
+        currencies.forEach(currency => addFavoriteCurrencyListOutput(currency));
     } else if (query[0].match('^[A-Z]{1,2}$')) {
-        currencies.filter(currency => currency.includes(query[0])).forEach(currency => addfavoriteCurrencyListOutput(currency));
+        currencies.filter(currency => currency.includes(query[0])).forEach(currency => addFavoriteCurrencyListOutput(currency));
     } else if (currencies.includes(query[0])) {
-        addfavoriteCurrencyListOutput(query[0]);
+        addFavoriteCurrencyListOutput(query[0]);
     }
 }
 
@@ -340,9 +345,9 @@ else if (!query[0]) {
     // show favorite currency list in first page
     addBaseOutput();
     // show settings below the currencies list
-} else if (query[0] === 'BASE' && !query[1]) {
+} else if (query[0] === BASE_CURRENCY_ARG && !query[1]) {
     currencies.forEach(currency => addSetBaseCurrencyListOutput(currency));
-} else if (query[0] === 'BASE' && query[1]) {
+} else if (query[0] === BASE_CURRENCY_ARG && query[1]) {
     if (query[1].match('^[A-Z]{1,2}$')) {
         currencies.filter(currency => currency.includes(query[1])).forEach(currency => addSetBaseCurrencyListOutput(currency));
     } else if (currencies.includes(query[1])) {
@@ -355,21 +360,21 @@ else if (!query[0]) {
 /*
     Add / Remove / Reset favorite currency list
 */
-else if (query[0] === 'LIST' && !query[1]) {
-    currencies.forEach(currency => addfavoriteCurrencyListOutput(currency));
-} else if (query[0] === 'LIST' && query[1]) {
+else if (query[0] === LIST_FAV_ARG && !query[1]) {
+    currencies.forEach(currency => addFavoriteCurrencyListOutput(currency));
+} else if (query[0] === LIST_FAV_ARG && query[1]) {
     if (query[1].match('^[A-Z]{1,2}$')) {
-        currencies.filter(currency => currency.includes(query[1])).forEach(currency => addfavoriteCurrencyListOutput(currency));
+        currencies.filter(currency => currency.includes(query[1])).forEach(currency => addFavoriteCurrencyListOutput(currency));
     } else if (currencies.includes(query[1])) {
         promises.push(getOSLocale());
         promises.push(updateList(query[1]));
         addUpdateListOutput(query[1]);
     }
-} else if (query[0] === 'RMVE' && !query[1]) {
+} else if (query[0] === REMOVE_FAV_ARG && !query[1]) {
     if (typeof favoriteCurrency != "undefined" && favoriteCurrency != "") { // only if there's a value in list
         favoriteCurrency.forEach(currency => removeFavoriteCurrencyListOutput(currency));
     }
-} else if (query[0] === 'RMVE' && query[1]) {
+} else if (query[0] === REMOVE_FAV_ARG && query[1]) {
     if (typeof favoriteCurrency != "undefined" && favoriteCurrency != "") {
         if (query[1].match('^[A-Z]{1,2}$')) {
             favoriteCurrency.filter(currency => currency.includes(query[1])).forEach(currency => removeFavoriteCurrencyListOutput(currency));
@@ -379,9 +384,9 @@ else if (query[0] === 'LIST' && !query[1]) {
             addRemoveListOutput(query[1]);
         }
     }
-} else if (query[0] === 'REST' && !query[1]) {
+} else if (query[0] === RESET_FAV_ARG && !query[1]) {
     resetfavoriteCurrency();
-} else if (query[0] === 'REST' && query[1] == 'GO') {
+} else if (query[0] === RESET_FAV_ARG && query[1] == 'GO') {
     resetConfirmed();
     addResetOutput(query[1]);
 } else if (query[0].match(/\d*([.,]?\d+)/) && !query[1]) {
@@ -399,3 +404,4 @@ Promise.all(promises).then(() => {
     alfy.output(output)
 });
 
+})();
